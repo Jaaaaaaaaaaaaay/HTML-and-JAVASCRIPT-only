@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Flappy Bird with Start Screen</title>
+  <style>
+    body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background: skyblue; overflow: hidden; }
+    #game { position: relative; width: 400px; height: 600px; background: lightblue; overflow: hidden; border: 2px solid #000; }
+    #bird { position: absolute; width: 30px; height: 30px; background: yellow; border-radius: 50%; top: 200px; left: 50px; }
+    .pipe { position: absolute; width: 60px; background: green; }
+    #score { position: absolute; top: 10px; left: 10px; font-size: 20px; font-weight: bold; }
+    #startScreen {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 30px;
+      flex-direction: column;
+    }
+  </style>
+</head>
+<body>
+  <div id="game">
+    <div id="bird"></div>
+    <div id="score">0</div>
+    <div id="startScreen">Press Space to Start</div>
+  </div>
+
+  <script>
+    const bird = document.getElementById("bird");
+    const game = document.getElementById("game");
+    const scoreDisplay = document.getElementById("score");
+    const startScreen = document.getElementById("startScreen");
+
+    let birdTop = 200;
+    let gravity = 2;
+    let jumpHeight = 40;
+    let pipes = [];
+    let score = 0;
+    let gameOver = false;
+    let gameStarted = false;
+
+    // Jump and start game
+    document.addEventListener("keydown", (e) => {
+      if(!gameStarted && e.code === "Space") {
+        gameStarted = true;
+        startScreen.style.display = "none"; // hide start screen
+      }
+      if(gameStarted) {
+        birdTop -= jumpHeight;
+        if(birdTop < 0) birdTop = 0;
+      }
+    });
+
+    // Create pipes
+    function createPipe() {
+      const pipeGap = 200;
+      const pipeHeight = Math.floor(Math.random() * 300) + 50;
+
+      const topPipe = document.createElement("div");
+      const bottomPipe = document.createElement("div");
+
+      topPipe.className = "pipe";
+      bottomPipe.className = "pipe";
+
+      topPipe.style.height = pipeHeight + "px";
+      topPipe.style.top = "0px";
+      topPipe.style.left = "400px";
+
+      bottomPipe.style.height = (600 - pipeHeight - pipeGap) + "px";
+      bottomPipe.style.top = (pipeHeight + pipeGap) + "px";
+      bottomPipe.style.left = "400px";
+
+      game.appendChild(topPipe);
+      game.appendChild(bottomPipe);
+
+      pipes.push({topPipe, bottomPipe, passed: false});
+    }
+
+    // Game loop
+    function gameLoop() {
+      if(gameOver || !gameStarted) {
+        requestAnimationFrame(gameLoop);
+        return;
+      }
+
+      // Bird gravity
+      birdTop += gravity;
+      if(birdTop > 570) { birdTop = 570; gameOver = true; alert("Game Over! Score: " + score); }
+      bird.style.top = birdTop + "px";
+
+      // Move pipes
+      pipes.forEach(pipe => {
+        let left = parseInt(pipe.topPipe.style.left);
+        left -= 3;
+        pipe.topPipe.style.left = left + "px";
+        pipe.bottomPipe.style.left = left + "px";
+
+        // Collision detection
+        const birdRect = bird.getBoundingClientRect();
+        const topRect = pipe.topPipe.getBoundingClientRect();
+        const bottomRect = pipe.bottomPipe.getBoundingClientRect();
+
+        if(birdRect.right > topRect.left && birdRect.left < topRect.right &&
+           (birdRect.top < topRect.bottom || birdRect.bottom > bottomRect.top)) {
+          gameOver = true;
+          alert("Game Over! Score: " + score);
+        }
+
+        // Score
+        if(!pipe.passed && left + 60 < 50) {
+          score++;
+          scoreDisplay.textContent = score;
+          pipe.passed = true;
+        }
+      });
+
+      // Remove pipes off screen
+      pipes = pipes.filter(pipe => parseInt(pipe.topPipe.style.left) > -60);
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Spawn pipes every 2 seconds
+    setInterval(() => { if(gameStarted && !gameOver) createPipe(); }, 3500);
+
+    gameLoop();
+  </script>
+</body>
+</html>
